@@ -4,6 +4,7 @@ import java.net.URI;
 import java.util.List;
 
 import javax.servlet.http.HttpServletResponse;
+import javax.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -26,7 +27,7 @@ public class CategoriaController {
 	private CategoriaRepository categoriaRepository;
 	
 	@GetMapping
-	public ResponseEntity<?> listar() {
+	public ResponseEntity<List<Categoria>> listar() {
 		List<Categoria> categorias = categoriaRepository.findAll();
 		
 		return categorias.isEmpty()
@@ -35,7 +36,10 @@ public class CategoriaController {
 	}
 	
 	@PostMapping
-	public ResponseEntity<Categoria> criar(@RequestBody Categoria categoria, HttpServletResponse response) {
+	public ResponseEntity<Categoria> criar(
+			@Valid @RequestBody Categoria categoria, 
+			HttpServletResponse response
+	) {
 		Categoria categoriaSalva = categoriaRepository.save(categoria);
 		
 		URI uri = ServletUriComponentsBuilder.fromCurrentRequestUri().path("/{codigo}")
