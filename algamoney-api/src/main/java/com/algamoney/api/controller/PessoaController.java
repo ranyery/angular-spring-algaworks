@@ -1,13 +1,8 @@
 package com.algamoney.api.controller;
 
-import com.algamoney.api.Service.PessoaService;
-import com.algamoney.api.event.RecursoCriadoEvent;
 import com.algamoney.api.model.Pessoa;
-import com.algamoney.api.repository.PessoaRepository;
-import org.springframework.beans.BeanUtils;
+import com.algamoney.api.service.PessoaService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,31 +16,17 @@ import java.util.List;
 public class PessoaController {
 
 	@Autowired
-	private PessoaRepository pessoaRepository;
-
-	@Autowired
 	private PessoaService pessoaService;
-	
-	@Autowired
-	private ApplicationEventPublisher publisher;
-	
+
 	@GetMapping
-	public ResponseEntity<List<Pessoa>> listar() {
-		List<Pessoa> pessoas = pessoaRepository.findAll();
-		
-		return pessoas.isEmpty()
-				? ResponseEntity.noContent().build()
-				: ResponseEntity.ok(pessoas);
+	public ResponseEntity<List<Pessoa>> buscarTodos() {
+		return pessoaService.listarTodos();
 	}
 	
 	@GetMapping("/{codigo}")
 	public ResponseEntity<Pessoa> buscarUmaPessoa(@PathVariable Long codigo) {
-		if (!pessoaRepository.existsById(codigo)) {
-			return ResponseEntity.notFound().build();
-		}
-		
-		Pessoa pessoa = pessoaRepository.findById(codigo).get();
-		return ResponseEntity.ok(pessoa);
+		Pessoa pessoaSalva = pessoaService.buscarPessoaPeloCodigo(codigo);
+		return ResponseEntity.ok(pessoaSalva);
 	}
 	
 	@PostMapping
@@ -53,15 +34,14 @@ public class PessoaController {
 			@Valid @RequestBody Pessoa pessoa, 
 			HttpServletResponse response
 	) {
-		Pessoa pessoaSalva = pessoaRepository.save(pessoa);
-		publisher.publishEvent(new RecursoCriadoEvent(this, response, pessoaSalva.getCodigo()));
+		Pessoa pessoaSalva = pessoaService.criarPessoa(pessoa, response);
 		return ResponseEntity.status(HttpStatus.CREATED).body(pessoaSalva);
 	}
 
 	@DeleteMapping("/{codigo}")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public void remover(@PathVariable Long codigo) {
-		pessoaRepository.deleteById(codigo);
+		pessoaService.removerPessoaPeloCodigo(codigo);
 	}
 
 	@PutMapping("/{codigo}")
@@ -72,5 +52,14 @@ public class PessoaController {
 		Pessoa pessoaSalva = pessoaService.atualizar(codigo, pessoa);
 		return ResponseEntity.ok(pessoaSalva);
 	}
-	
+
+	@PutMapping("/{codigo}/ativo")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public void atualizarProriedadeAtivo(
+			@PathVariable Long codigo,
+			@RequestBody Boolean ativo
+	) {
+		pessoaService.atualizarPropriedadeAtivo(codigo, ativo);
+	}
+
 }
